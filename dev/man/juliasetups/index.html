@@ -11,7 +11,7 @@ LaMEM Model setup
 |-- Solver options      :  direct solver; superlu_dist; penalty term=10000.0
 |-- Model setup options :  Type=files; 
 |-- Output options      :  filename=output; pvd=1; avd=0; surf=0
-|-- Materials           :  0 phases; </code></pre><p><code>Model</code> is a structure that contains all the information about the LaMEM simulation and consists of the following sub-structures that can all be adjusted.</p><pre><code class="nohighlight hljs">BoundaryConditions  FreeSurface         Grid                
+|-- Materials           :  0 phases;</code></pre><p><code>Model</code> is a structure that contains all the information about the LaMEM simulation and consists of the following sub-structures that can all be adjusted.</p><pre><code class="nohighlight hljs">BoundaryConditions  FreeSurface         Grid                
 Materials           ModelSetup          Output              
 Scaling             SolutionParams      Solver              
 Time</code></pre><p>You can, for example, look at the current <code>Grid</code>:</p><pre><code class="language-julia hljs">julia&gt; model.Grid
@@ -32,14 +32,49 @@ LaMEM grid with constant Δ:
   Phases      : range ϵ [0 - 0]
   Temp        : range ϵ [0.0 - 0.0]</code></pre><p>or do it by directly accessing the respectyive data field:</p><pre><code class="language-julia hljs">julia&gt; model.Grid.nel_x = [32]
 1-element Vector{Int64}:
- 32
- ```
+ 32</code></pre><p>Every LaMEM model setup needs to specify material properties for the different materials. By default it has nothing:</p><pre><code class="nohighlight hljs">julia&gt; model.Materials
+LaMEM Material Properties: 
+  Softening       = 
+  PhaseTransition =</code></pre><p>yet, we can specify different materials using the <code>Phase</code> structure:</p><pre><code class="language-julia hljs">julia&gt; sphere = Phase(Name=&quot;Sphere&quot;, ID=1, eta=1e20, rho=2800)
+Phase 1 (Sphere): 
+  rho    = 2800.0 
+  eta    = 1.0e20 </code></pre><p>and add that to the model with:</p><pre><code class="language-julia hljs">julia&gt; add_phase!(model, sphere)
+julia&gt; model
+LaMEM Model setup
+|
+|-- Scaling             :  GeoParams.Units.GeoUnits{GEO}
+|-- Grid                :  nel=(32, 32, 32); xϵ(-20.0, 20.0), yϵ(-10.0, 0.0), zϵ(-10.0, 0.0) 
+|-- Time                :  nstep_max=50; nstep_out=1; time_end=1.0; dt=0.05
+|-- Boundary conditions :  noslip=[0, 0, 0, 0, 0, 0]
+|-- Solution parameters :  eta_min=1.0e18; eta_max=1.0e25; eta_ref=1.0e20; act_temp_diff=0
+|-- Solver options      :  direct solver; superlu_dist; penalty term=10000.0
+|-- Model setup options :  Type=files; 
+|-- Output options      :  filename=output; pvd=1; avd=0; surf=0
+|-- Materials           :  1 phases; </code></pre><p>Note that the model now has 1 phase.</p><p>In order to run a simulation, we need to define at least 1 phase and heterogeneities in either the initial temperature field (<code>model.Grid.Temp</code>) or the Phases field (<code>model.Grid.Phases</code>). The easiest way to do that is to use routines from the <code>GeophyicalModelGenerator</code> package, for which we created simple interfaces to many of the relevant routines:</p><pre><code class="language-julia hljs">julia&gt; using GeophysicalModelGenerator
+julia&gt; AddSphere!(model,cen=(0.0,0.0,0.0), radius=(0.5, ))</code></pre><p>For the sake of this example, lets add another phase:</p><pre><code class="language-julia hljs">julia&gt; matrix = Phase(ID=0,Name=&quot;matrix&quot;,eta=1e20,rho=3000)
+Phase 0 (matrix): 
+  rho    = 3000.0 
+  eta    = 1.0e20 
+julia&gt; add_phase!(model, matrix)</code></pre><p>At this stage you have a model setup with 2 phases and heterogeneities in the <code>Phases</code> field, which you can check with:</p><pre><code class="language-julia hljs">julia&gt; model
+LaMEM Model setup
+|
+|-- Scaling             :  GeoParams.Units.GeoUnits{GEO}
+|-- Grid                :  nel=(32, 32, 32); xϵ(-20.0, 20.0), yϵ(-10.0, 0.0), zϵ(-10.0, 0.0) 
+|-- Time                :  nstep_max=50; nstep_out=1; time_end=1.0; dt=0.05
+|-- Boundary conditions :  noslip=[0, 0, 0, 0, 0, 0]
+|-- Solution parameters :  eta_min=1.0e18; eta_max=1.0e25; eta_ref=1.0e20; act_temp_diff=0
+|-- Solver options      :  direct solver; superlu_dist; penalty term=10000.0
+|-- Model setup options :  Type=files; 
+|-- Output options      :  filename=output; pvd=1; avd=0; surf=0
+|-- Materials           :  2 phases; 
 
-Every LaMEM model setup needs to specify material properties for the different materials. By default it has nothing:</code></pre><p>julia&gt; model.Materials LaMEM Material Properties:    Softening       =    PhaseTransition = </p><pre><code class="nohighlight hljs">
-yet, we can specify different materials using the `Phase` structure:</code></pre><p>julia julia&gt; sphere = Phase(Name=&quot;Sphere&quot;, ID=1, eta=1e20, rho=2800) Phase 1 (Sphere):    rho    = 2800.0    eta    = 1.0e20 </p><pre><code class="nohighlight hljs">and add that to the model with:</code></pre><p>julia julia&gt; add<em>phase!(model, sphere) julia&gt; model LaMEM Model setup | |– Scaling             :  GeoParams.Units.GeoUnits{GEO} |– Grid                :  nel=(32, 32, 32); xϵ(-20.0, 20.0), yϵ(-10.0, 0.0), zϵ(-10.0, 0.0)  |– Time                :  nstep</em>max=50; nstep<em>out=1; time</em>end=1.0; dt=0.05 |– Boundary conditions :  noslip=[0, 0, 0, 0, 0, 0] |– Solution parameters :  eta<em>min=1.0e18; eta</em>max=1.0e25; eta<em>ref=1.0e20; act</em>temp<em>diff=0 |– Solver options      :  direct solver; superlu</em>dist; penalty term=10000.0 |– Model setup options :  Type=files;  |– Output options      :  filename=output; pvd=1; avd=0; surf=0 |– Materials           :  1 phases; </p><pre><code class="nohighlight hljs">Note that the model now has 1 phase.
 
-In order to run a simulation, we need to define at least 1 phase and heterogeneities in either the initial temperature field (`model.Grid.Temp`) or the Phases field (`model.Grid.Phases`).
-The easiest way to do that is to use routines from the `GeophyicalModelGenerator` package, for which we created simple interfaces to many of the relevant routines:</code></pre><p>julia julia&gt; using GeophysicalModelGenerator julia&gt; AddSphere!(model,cen=(0.0,0.0,0.0), radius=(0.5, ))</p><pre><code class="nohighlight hljs">
-For the sake of this example, lets add another phase:</code></pre><p>julia julia&gt; matrix = Phase(ID=0,Name=&quot;matrix&quot;,eta=1e20,rho=3000) Phase 0 (matrix):    rho    = 3000.0    eta    = 1.0e20  julia&gt; add_phase!(model, matrix)</p><pre><code class="nohighlight hljs">
-At this stage you have a model setup with 2 phases and heterogeneities in the `Phases` field, which you can check with:</code></pre><p>julia  julia&gt; model LaMEM Model setup | |– Scaling             :  GeoParams.Units.GeoUnits{GEO} |– Grid                :  nel=(32, 32, 32); xϵ(-20.0, 20.0), yϵ(-10.0, 0.0), zϵ(-10.0, 0.0)  |– Time                :  nstep<em>max=50; nstep</em>out=1; time<em>end=1.0; dt=0.05 |– Boundary conditions :  noslip=[0, 0, 0, 0, 0, 0] |– Solution parameters :  eta</em>min=1.0e18; eta<em>max=1.0e25; eta</em>ref=1.0e20; act<em>temp</em>diff=0 |– Solver options      :  direct solver; superlu_dist; penalty term=10000.0 |– Model setup options :  Type=files;  |– Output options      :  filename=output; pvd=1; avd=0; surf=0 |– Materials           :  2 phases; </p><p>julia&gt; model.Grid LaMEM grid with constant Δ:    nel         : ([32], [32], [32])   marker/cell : (3, 3, 3)   x           ϵ [-20.0 : 20.0]   y           ϵ [-10.0 : 0.0]   z           ϵ [-10.0 : 0.0]   Phases      : range ϵ [0 - 1]   Temp        : range ϵ [0.0 - 0.0]</p><pre><code class="nohighlight hljs">
-Running a model is very simple:</code></pre><p>julia julia&gt; run_lamem(model,1) ```</p><h3 id="More-examples"><a class="docs-heading-anchor" href="#More-examples">More examples</a><a id="More-examples-1"></a><a class="docs-heading-anchor-permalink" href="#More-examples" title="Permalink"></a></h3><p>More examples can be found on the left hand side menu.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../installation_HPC/">« Installation on HPC systems</a><a class="docs-footer-nextpage" href="../juliasetup_example_sphere/">Example 1: Sphere »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Thursday 20 July 2023 18:03">Thursday 20 July 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+julia&gt; model.Grid
+LaMEM grid with constant Δ: 
+  nel         : ([32], [32], [32])
+  marker/cell : (3, 3, 3)
+  x           ϵ [-20.0 : 20.0]
+  y           ϵ [-10.0 : 0.0]
+  z           ϵ [-10.0 : 0.0]
+  Phases      : range ϵ [0 - 1]
+  Temp        : range ϵ [0.0 - 0.0]</code></pre><p>Running a model is very simple:</p><pre><code class="language-julia hljs">julia&gt; run_lamem(model,1)</code></pre><h3 id="More-examples"><a class="docs-heading-anchor" href="#More-examples">More examples</a><a id="More-examples-1"></a><a class="docs-heading-anchor-permalink" href="#More-examples" title="Permalink"></a></h3><p>More examples can be found on the left hand side menu.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../installation_HPC/">« Installation on HPC systems</a><a class="docs-footer-nextpage" href="../juliasetup_example_sphere/">Example 1: Sphere »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Thursday 20 July 2023 18:18">Thursday 20 July 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
